@@ -446,13 +446,13 @@
     }
 
     function checkAuth() {
-      return fetch("http://127.0.0.1:5000/api/check-auth", {
+      return fetch("https://cybvars.onrender.com/api/check-auth", {
         credentials: "include",
       }).then((r) => r.json());
     }
 
     function logout() {
-      fetch("http://127.0.0.1:5000/api/logout", {
+      fetch("https://cybvars.onrender.com/api/logout", {
         method: "POST",
         credentials: "include",
       }).then(() => (window.location.href = "login.html"));
@@ -487,7 +487,7 @@
 
     // Load & render
     function loadPasswords() {
-      fetch("http://127.0.0.1:5000/api/passwords", { credentials: "include" })
+      fetch("https://cybvars.onrender.com/api/passwords", { credentials: "include" })
         .then((r) => r.json())
         .then((data) => {
           if (!data.success) return logout();
@@ -550,7 +550,7 @@
               attachPasswordVisibilityToggles();
             } else {
               const res = await fetch(
-                `http://127.0.0.1:5000/api/passwords/${id}`,
+                `https://cybvars.onrender.com/api/passwords/${id}`,
                 { credentials: "include" }
               ).then((r) => r.json());
               if (res.success) {
@@ -585,7 +585,7 @@
             }, 2000);
           } else {
             const { password } = await fetch(
-              `http://127.0.0.1:5000/api/passwords/${id}`,
+              `https://cybvars.onrender.com/api/passwords/${id}`,
               { credentials: "include" }
             ).then((r) => r.json());
             navigator.clipboard.writeText(password);
@@ -618,7 +618,7 @@
       document.getElementById("otpSuccess").classList.add("hidden");
       document.getElementById("otpInput").value = "";
       document.getElementById("editFormContainer").classList.add("hidden");
-      fetch("http://127.0.0.1:5000/api/generate-otp", {
+      fetch("https://cybvars.onrender.com/api/generate-otp", {
         method: "POST",
         credentials: "include",
       })
@@ -659,7 +659,7 @@
         document.getElementById("otpError").classList.remove("hidden");
         return;
       }
-      fetch("http://127.0.0.1:5000/api/verify-action-otp", {
+      fetch("https://cybvars.onrender.com/api/verify-action-otp", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -678,7 +678,7 @@
     };
 
     function deletePassword(token) {
-      fetch(`http://127.0.0.1:5000/api/passwords/${currentPwdId}`, {
+      fetch(`https://cybvars.onrender.com/api/passwords/${currentPwdId}`, {
         method: "DELETE",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -694,7 +694,7 @@
     }
 
     function showEditForm(token) {
-      fetch(`http://127.0.0.1:5000/api/passwords/${currentPwdId}`, {
+      fetch(`https://cybvars.onrender.com/api/passwords/${currentPwdId}`, {
         credentials: "include",
       })
         .then((r) => r.json())
@@ -709,7 +709,7 @@
           `;
           c.classList.remove("hidden");
           document.getElementById("saveEditBtn").onclick = () => {
-            fetch(`http://127.0.0.1:5000/api/passwords/${currentPwdId}`, {
+            fetch(`https://cybvars.onrender.com/api/passwords/${currentPwdId}`, {
               method: "PUT",
               credentials: "include",
               headers: { "Content-Type": "application/json" },
@@ -761,7 +761,7 @@
         .getElementById("addPasswordForm")
         .addEventListener("submit", (e) => {
           e.preventDefault();
-          fetch("http://127.0.0.1:5000/api/passwords", {
+          fetch("https://cybvars.onrender.com/api/passwords", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
