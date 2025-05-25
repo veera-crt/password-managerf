@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 import psycopg2
@@ -9,6 +10,7 @@ from email.message import EmailMessage
 from threading import Thread
 from datetime import datetime, timedelta
 import secrets
+
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
