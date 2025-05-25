@@ -11,20 +11,33 @@ from datetime import datetime, timedelta
 import secrets
 import os
 
+from flask import Flask
+from flask_cors import CORS
+import os
+import secrets
 
 app = Flask(__name__)
-app.secret_key = ...
+
+# 1) Real secret key (for sessions)
+app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24).hex())
+
+# 2) Allow HTTPS-only cookie + cross-site cookie for your GH-Pages frontend
 app.config.update(
-  SESSION_COOKIE_SAMESITE='None',
-  SESSION_COOKIE_SECURE=True
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True,
 )
 
-CORS(
-  app,
-  supports_credentials=True,
-  resources={ r"/api/*": { "origins": "https://veera-crt.github.io" } }
-)
+# 3) Enable CORS for every /api/* endpoint, with credentials, for your exact origin
+from flask_cors import CORS
 
+# Replace your current CORS setup with this:
+CORS(app,
+     supports_credentials=True,
+     origins=["https://veera-crt.github.io", "http://localhost:*", "https://veera-crt.github.io/password-managerf/", "https://veera-crt.github.io/password-managerf/register.html", "https://veera-crt.github.io/password-managerf/login.html", "https://veera-crt.github.io/password-managerf/dashboard.html"],  # Add all your frontend URLs
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     expose_headers=["Content-Type"],
+     max_age=600)
 
 
 # PostgreSQL config (Render)
