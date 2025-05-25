@@ -9,35 +9,11 @@ from email.message import EmailMessage
 from threading import Thread
 from datetime import datetime, timedelta
 import secrets
-import os
-
-from flask import Flask
-from flask_cors import CORS
-import os
-import secrets
 
 app = Flask(__name__)
-
-# 1) Real secret key (for sessions)
-app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24).hex())
-
-# 2) Allow HTTPS-only cookie + cross-site cookie for your GH-Pages frontend
-app.config.update(
-    SESSION_COOKIE_SAMESITE="None",
-    SESSION_COOKIE_SECURE=True,
-)
-
-# 3) Enable CORS for every /api/* endpoint, with credentials, for your exact origin
-from flask_cors import CORS
-
-# Replace your current CORS setup with this:
-CORS(app,
-     supports_credentials=True,
-     origins=["https://veera-crt.github.io", "http://localhost:*", "https://veera-crt.github.io/password-managerf/", "https://veera-crt.github.io/password-managerf/register.html", "https://veera-crt.github.io/password-managerf/login.html", "https://veera-crt.github.io/password-managerf/dashboard.html"],  # Add all your frontend URLs
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
-     expose_headers=["Content-Type"],
-     max_age=600)
+CORS(app, supports_credentials=True)
+app.secret_key = secrets.token_hex(32)  # For session management
+ # Session timeout
 
 
 # PostgreSQL config (Render)
@@ -130,64 +106,7 @@ def verify_otp():
         return jsonify(success=False, message="Invalid OTP"), 400
     except Exception as e:
         return jsonify(success=False, message=str(e)), 500
-from werkzeug.security import check_password_hash
-import base64
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.backends import default_backend
-import os
-import base64
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.backends import default_backend
-import os
 
-# AES-256 Key Setup (replace this with your secure key setup)
-AES_KEY = base64.b64decode(os.environ.get("ENCRYPTION_KEY", base64.b64encode(os.urandom(32)).decode()))
-
-def encrypt_data(plain_text):
-    iv = os.urandom(16)
-    cipher = Cipher(algorithms.AES(AES_KEY), modes.CBC(iv), backend=default_backend())
-    encryptor = cipher.encryptor()
-    padder = padding.PKCS7(128).padder()
-    padded_data = padder.update(plain_text.encode()) + padder.finalize()
-    cipher_text = encryptor.update(padded_data) + encryptor.finalize()
-    return base64.b64encode(iv + cipher_text).decode()
-
-def decrypt_data(enc_text):
-    enc = base64.b64decode(enc_text)
-    iv = enc[:16]
-    cipher_text = enc[16:]
-    cipher = Cipher(algorithms.AES(AES_KEY), modes.CBC(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
-    padded_data = decryptor.update(cipher_text) + decryptor.finalize()
-    unpadder = padding.PKCS7(128).unpadder()
-    plain_text = unpadder.update(padded_data) + unpadder.finalize()
-    return plain_text.decode()
-
-
-# AES-256 Key Setup (32 bytes = 256 bits)
-AES_KEY = base64.b64decode(os.environ.get("ENCRYPTION_KEY", base64.b64encode(os.urandom(32)).decode()))
-
-def encrypt_data(plain_text):
-    iv = os.urandom(16)  # Initialization vector for CBC mode
-    cipher = Cipher(algorithms.AES(AES_KEY), modes.CBC(iv), backend=default_backend())
-    encryptor = cipher.encryptor()
-    padder = padding.PKCS7(128).padder()
-    padded_data = padder.update(plain_text.encode()) + padder.finalize()
-    cipher_text = encryptor.update(padded_data) + encryptor.finalize()
-    return base64.b64encode(iv + cipher_text).decode()
-
-def decrypt_data(enc_text):
-    enc = base64.b64decode(enc_text)
-    iv = enc[:16]
-    cipher_text = enc[16:]
-    cipher = Cipher(algorithms.AES(AES_KEY), modes.CBC(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
-    padded_data = decryptor.update(cipher_text) + decryptor.finalize()
-    unpadder = padding.PKCS7(128).unpadder()
-    plain_text = unpadder.update(padded_data) + unpadder.finalize()
-    return plain_text.decode()
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -247,7 +166,7 @@ def save_password():
     data = request.get_json()
     website = data.get('website')
     username = data.get('username')
-    password = encrypt_data(data.get('password'))
+    password = data.get('password')  # <-- No encryption
     notes = data.get('notes')
     try:
         cur = conn.cursor()
@@ -257,6 +176,7 @@ def save_password():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
 
 def add_password():
     if not session.get('logged_in'):
@@ -335,7 +255,7 @@ def update_password(password_id):
     data = request.get_json()
     website = data.get("website")
     username = data.get("username")
-    password = data.get("password")
+    password = data.get("password")  # <-- plain password
     notes = data.get("notes")
     otp = data.get("otp")
 
@@ -347,12 +267,12 @@ def update_password(password_id):
         return jsonify(success=False, message="Invalid or expired OTP"), 400
 
     try:
-        encrypted_password = encrypt_data(password)
         cur.execute("""
             UPDATE passwords 
             SET website = %s, username = %s, password = %s, notes = %s 
             WHERE id = %s AND user_id = %s
-        """, (website, username, encrypted_password, notes, password_id, session['user_id']))
+        """, (website, username, password, notes, password_id, session['user_id']))  # <-- store plain password
+        conn.commit()
         return jsonify(success=True)
     except Exception as e:
         return jsonify(success=False, message=str(e)), 500
@@ -364,17 +284,26 @@ def get_password_by_id(password_id):
 
     try:
         cur = conn.cursor()
-        cur.execute("SELECT password FROM passwords WHERE id = %s AND user_id = %s", (password_id, session['user_id']))
+        cur.execute(
+            "SELECT website, username, password, notes FROM passwords WHERE id = %s AND user_id = %s",
+            (password_id, session['user_id'])
+        )
         row = cur.fetchone()
 
         if not row:
             return jsonify({"success": False, "message": "Password not found"}), 404
 
-        decrypted_password = decrypt_data(row['password'])
-        return jsonify({"success": True, "password": decrypted_password})
+        return jsonify({
+            "success": True,
+            "website": row["website"],
+            "username": row["username"],
+            "password": row["password"],
+            "notes": row["notes"]
+        })
 
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
 @app.route("/api/passwords/<int:password_id>", methods=["DELETE"])
 def delete_password(password_id):
     if 'user_id' not in session:
@@ -407,5 +336,8 @@ def delete_password(password_id):
 
 if __name__ == '__main__':
     app.run(debug=True)
+    app.debug = True
+    app.config['DEBUG'] = True
+
 
 
