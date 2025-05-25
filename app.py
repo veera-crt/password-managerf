@@ -11,10 +11,20 @@ from datetime import datetime, timedelta
 import secrets
 import os
 
+
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
-app.secret_key = secrets.token_hex(32)  # For session management
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Session timeout
+app.secret_key = ...
+app.config.update(
+  SESSION_COOKIE_SAMESITE='None',
+  SESSION_COOKIE_SECURE=True
+)
+
+CORS(
+  app,
+  supports_credentials=True,
+  resources={ r"/api/*": { "origins": "https://veera-crt.github.io" } }
+)
+
 
 
 # PostgreSQL config (Render)
