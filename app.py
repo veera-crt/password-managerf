@@ -9,21 +9,19 @@ from email.message import EmailMessage
 from threading import Thread
 from datetime import datetime, timedelta
 import secrets
+import os
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 app.secret_key = secrets.token_hex(32)  # For session management
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Session timeout
 
-# PostgreSQL config
-conn = psycopg2.connect(
-    dbname="password_manager",
-    user="veerapandig",
-    password="veera",
-    host="localhost",
-    cursor_factory=RealDictCursor
-)
+
+# PostgreSQL config (Render)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 conn.autocommit = True
+
 
 
 def send_otp_email(to_email, otp):
