@@ -104,8 +104,6 @@ pydantic==2.11.3
 pydantic-settings==2.8.1
 pydantic_core==2.33.1
 PyJWT==2.10.1
-pyobjc==11.0
-pyobjc-core==11.0
 pyobjc-framework-Accessibility==11.0
 pyobjc-framework-Accounts==11.0
 pyobjc-framework-AddressBook==11.0
